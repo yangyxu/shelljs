@@ -5,7 +5,6 @@
 var os = require('os');
 var fs = require('fs');
 var glob = require('glob');
-var shell = require('..');
 var _to = require('./to');
 var _toEnd = require('./toEnd');
 
@@ -19,7 +18,7 @@ var config = {
   noglob: false,
   maxdepth: 255
 };
-exports.config = config;
+module.exports.config = config;
 
 var state = {
   error: null,
@@ -27,18 +26,18 @@ var state = {
   currentCmd: 'shell.js',
   tempDir: null
 };
-exports.state = state;
+module.exports.state = state;
 
 delete process.env.OLDPWD; // initially, there's no previous directory
 
 var platform = os.type().match(/^Win/) ? 'win' : 'unix';
-exports.platform = platform;
+module.exports.platform = platform;
 
 function log() {
   if (!config.silent)
     console.error.apply(console, arguments);
 }
-exports.log = log;
+module.exports.log = log;
 
 // Shows error message. Throws if config.fatal is true
 function error(msg, _code, _continue) {
@@ -74,7 +73,15 @@ function error(msg, _code, _continue) {
   if (msg.length > 0)
     log(log_entry);
 }
-exports.error = error;
+module.exports.error = error;
+
+// If we require `..` when this file is loaded, we get a circular dependency. This we can setup our
+// exports before shell.js's `require` returns
+var shell;
+function getLazyShell(){
+  if (!shell) shell = require('..');
+  return shell;
+}
 
 //@
 //@ ### ShellString(str)
@@ -106,7 +113,7 @@ var ShellString = function (stdout, stderr, code) {
   return that;
 };
 
-exports.ShellString = ShellString;
+module.exports.ShellString = ShellString;
 
 // Return the home directory in a platform-agnostic way, with consideration for
 // older versions of node
@@ -118,7 +125,7 @@ function getUserHome() {
     result = process.env[(process.platform === 'win32') ? 'USERPROFILE' : 'HOME'];
   return result;
 }
-exports.getUserHome = getUserHome;
+module.exports.getUserHome = getUserHome;
 
 // Returns {'alice': true, 'bob': false} when passed a string and dictionary as follows:
 //   parseOptions('-a', {'a':'alice', 'b':'bob'});
@@ -173,7 +180,7 @@ function parseOptions(opt, map) {
   }
   return options;
 }
-exports.parseOptions = parseOptions;
+module.exports.parseOptions = parseOptions;
 
 // Expands wildcards with matching (ie. existing) file names.
 // For example:
@@ -196,7 +203,7 @@ function expand(list, opts) {
   });
   return expanded;
 }
-exports.expand = expand;
+module.exports.expand = expand;
 
 // Normalizes _unlinkSync() across platforms to match Unix behavior, i.e.
 // file can be unlinked even if it's read-only, see https://github.com/joyent/node/issues/3006
@@ -213,7 +220,7 @@ function unlinkSync(file) {
     }
   }
 }
-exports.unlinkSync = unlinkSync;
+module.exports.unlinkSync = unlinkSync;
 
 // e.g. 'shelljs_a5f185d0443ca...'
 function randomFileName() {
@@ -230,7 +237,7 @@ function randomFileName() {
 
   return 'shelljs_'+randomHash(20);
 }
-exports.randomFileName = randomFileName;
+module.exports.randomFileName = randomFileName;
 
 // extend(target_obj, source_obj1 [, source_obj2 ...])
 // Shallow extend, e.g.:
@@ -244,7 +251,7 @@ function extend(target) {
 
   return target;
 }
-exports.extend = extend;
+module.exports.extend = extend;
 
 // Common wrapper for all Unix-like commands
 function wrap(cmd, fn, options) {
@@ -321,9 +328,9 @@ function wrap(cmd, fn, options) {
     return retValue;
   };
 } // wrap
-exports.wrap = wrap;
+module.exports.wrap = wrap;
 
 function _readFromPipe(that) {
   return that instanceof String ? that.toString() : '';
 }
-exports.readFromPipe = _readFromPipe;
+module.exports.readFromPipe = _readFromPipe;

@@ -8,7 +8,6 @@
 
 var common = require('./src/common');
 
-
 //@
 //@ All commands run synchronously, unless otherwise stated.
 //@ All commands accept standard bash globbing characters (`*`, `?`, etc.),

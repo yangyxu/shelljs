@@ -1,11 +1,6 @@
-var fs = require('fs');
-var path = require('path');
+var IPC = require('./IPC');
 
-var fd = fs.openSync(path.resolve(process.argv[2], 'c2p-0'), 'ax');
+var c2p = new IPC.Write(process.argv[2], 'c2p');
 
-function sendMessage(type, payload) {
-  fs.writeSync(fd, JSON.stringify({ type: type, payload: payload }) + '\n');
-}
-
-sendMessage('log', 'testing!');
-sendMessage('exit');
+c2p.send({ type: 'log', payload: 'testing!'});
+c2p.send({ type: 'exit'});

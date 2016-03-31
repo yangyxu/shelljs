@@ -102,7 +102,7 @@ exports.env = process.env;
 
 //@include ./src/exec
 var _exec = require('./src/exec');
-exports.exec = common.wrap('exec', _exec, {notUnix:true});
+exports.exec = common.wrap('exec', _exec, {notUnix:true, syncify:true});
 
 //@include ./src/chmod
 var _chmod = require('./src/chmod');

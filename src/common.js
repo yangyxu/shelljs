@@ -7,6 +7,7 @@ var fs = require('fs');
 var glob = require('glob');
 var _to = require('./to');
 var _toEnd = require('./toEnd');
+var child = require('./child_manager');
 
 var DEFAULT_ERROR_CODE = 1;
 
@@ -253,6 +254,14 @@ function extend(target) {
 }
 module.exports.extend = extend;
 
+function syncify(cmd, fn, args, options) {
+  if (options.syncify && typeof args[args.length - 1] !== 'function') {
+    return child.doCmd(cmd, args);
+  } else {
+    return fn.apply(this, args);
+  }
+}
+
 // Common wrapper for all Unix-like commands
 function wrap(cmd, fn, options) {
   return function() {
@@ -272,7 +281,7 @@ function wrap(cmd, fn, options) {
       }
 
       if (options && options.notUnix) {
-        retValue = fn.apply(this, args);
+        retValue = syncify(cmd, fn, args, options);
       } else {
         if (typeof args[0] === 'object' && args[0].constructor.name === 'Object') {
           args = args; // object count as options
@@ -306,7 +315,7 @@ function wrap(cmd, fn, options) {
         if (!config.noglob && options && typeof options.idx === 'number')
           args = args.slice(0, options.idx).concat(expand(args.slice(options.idx)));
         try {
-          retValue = fn.apply(this, args);
+          retValue = syncify(cmd, fn, args, options);
         } catch (e) {
           if (e.msg === 'earlyExit')
             retValue = e.retValue;

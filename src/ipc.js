@@ -1,6 +1,12 @@
 var fs = require('fs');
 var path = require('path');
 
+function forceExistance(file) {
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, '');
+  }
+}
+
 function Read(tmp, name) {
   if (!(this instanceof Read)) return new Read(tmp, name);
   this.tmp = tmp;
@@ -8,9 +14,7 @@ function Read(tmp, name) {
   this.file = path.resolve(tmp, name + '-0');
   this.unparsedStr = ''; // In case there is a partly written line.
 
-  if (!fs.existsSync(this.file)) {
-    fs.writeFileSync(this.file, '');
-  }
+  forceExistance(this.file);
 
   this.fd = fs.openSync(this.file, 'r'); // Maybe this should be 'rs'
 }
@@ -38,6 +42,9 @@ function Write(tmp, name) {
   this.tmp = tmp;
   this.name = name;
   this.file = path.resolve(tmp, name + '-0');
+
+  forceExistance(this.file);
+
   this.fd = fs.openSync(this.file, 'a');
 }
 

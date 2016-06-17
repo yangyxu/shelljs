@@ -8,6 +8,7 @@ var glob = require('glob');
 var shell = require('..');
 var _to = require('./to');
 var _toEnd = require('./toEnd');
+var wrap = require('./wrap');
 
 var DEFAULT_ERROR_CODE = 1;
 
@@ -99,8 +100,8 @@ function ShellString(stdout, stderr, code) {
   }
   that.stderr = stderr;
   that.code = code;
-  that.to    = function() {wrap('to', _to, {idx: 1}).apply(that.stdout, arguments); return that;};
-  that.toEnd = function() {wrap('toEnd', _toEnd, {idx: 1}).apply(that.stdout, arguments); return that;};
+  that.to    = function() {wrap('to', _to, {globIdx: 1}).apply(that.stdout, arguments); return that;};
+  that.toEnd = function() {wrap('toEnd', _toEnd, {globIdx: 1}).apply(that.stdout, arguments); return that;};
   // A list of all commands that can appear on the right-hand side of a pipe
   ['cat', 'head', 'sed', 'sort', 'tail', 'grep', 'exec'].forEach(function (cmd) {
     that[cmd] = function() {return shell[cmd].apply(that.stdout, arguments);};
@@ -135,6 +136,8 @@ function parseOptions(opt, map) {
   for (var letter in map) {
     if (map[letter][0] !== '!')
       options[map[letter]] = false;
+    else
+      options[map[letter].slice(1)] = true;
   }
 
   if (!opt)
@@ -152,7 +155,7 @@ function parseOptions(opt, map) {
       if (c in map) {
         optionName = map[c];
         if (optionName[0] === '!')
-          options[optionName.slice(1, optionName.length-1)] = false;
+          options[optionName.slice(1)] = false;
         else
           options[optionName] = true;
       } else {
@@ -247,92 +250,6 @@ function extend(target) {
   return target;
 }
 exports.extend = extend;
-
-// Common wrapper for all Unix-like commands that performs glob expansion,
-// command-logging, and other nice things
-function wrap(cmd, fn, options) {
-  return function() {
-    var retValue = null;
-
-    state.currentCmd = cmd;
-    state.error = null;
-    state.errorCode = 0;
-
-    try {
-      var args = [].slice.call(arguments, 0);
-
-      // Log the command to stderr, if appropriate
-      if (config.verbose) {
-        console.error.apply(console, [cmd].concat(args));
-      }
-
-      if (options && options.notUnix) { // this branch is for exec()
-        retValue = fn.apply(this, args);
-      } else { // and this branch is for everything else
-        if (args[0] instanceof Object && args[0].constructor.name === 'Object') {
-          // a no-op, allowing the syntax `touch({'-r': file}, ...)`
-        } else if (args.length === 0 || typeof args[0] !== 'string' || args[0].length <= 1 || args[0][0] !== '-') {
-          args.unshift(''); // only add dummy option if '-option' not already present
-        }
-
-        // flatten out arrays that are arguments, to make the syntax:
-        //    `cp([file1, file2, file3], dest);`
-        // equivalent to:
-        //    `cp(file1, file2, file3, dest);`
-        args = args.reduce(function(accum, cur) {
-          if (Array.isArray(cur)) {
-            return accum.concat(cur);
-          } else {
-            accum.push(cur);
-            return accum;
-          }
-        }, []);
-
-        // Convert ShellStrings (basically just String objects) to regular strings
-        args = args.map(function(arg) {
-          if (arg instanceof Object && arg.constructor.name === 'String') {
-            return arg.toString();
-          } else
-            return arg;
-        });
-
-        // Expand the '~' if appropriate
-        var homeDir = getUserHome();
-        args = args.map(function(arg) {
-          if (typeof arg === 'string' && arg.slice(0, 2) === '~/' || arg === '~')
-            return arg.replace(/^~/, homeDir);
-          else
-            return arg;
-        });
-
-        // Perform glob-expansion on all arguments after idx, but preserve the
-        // arguments before it (like regexes for sed and grep)
-        if (!config.noglob && options && typeof options.idx === 'number')
-          args = args.slice(0, options.idx).concat(expand(args.slice(options.idx)));
-        try {
-          retValue = fn.apply(this, args);
-        } catch (e) {
-          if (e.msg === 'earlyExit')
-            retValue = e.retValue;
-          else throw e; // this is probably a bug that should be thrown up the call stack
-        }
-      }
-    } catch (e) {
-      if (!state.error) {
-        // If state.error hasn't been set it's an error thrown by Node, not us - probably a bug...
-        console.error('ShellJS: internal error');
-        console.error(e.stack || e);
-        process.exit(1);
-      }
-      if (config.fatal)
-        throw e;
-    }
-
-    state.currentCmd = 'shell.js';
-    return retValue;
-  };
-} // wrap
-exports.wrap = wrap;
 
 // This returns all the input that is piped into the current command (or the
 // empty string, if this isn't on the right-hand side of a pipe

@@ -264,6 +264,8 @@ function _exec(command, options, callback) {
       return execSync(command, options, pipe);
   } catch (e) {
     common.error('internal error');
+    console.log(e.message);
+    console.log(e.stack);
   }
 }
 module.exports = _exec;

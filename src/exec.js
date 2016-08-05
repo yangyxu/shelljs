@@ -75,7 +75,7 @@ function execSync(cmd, opts, pipe) {
         "var child = require('child_process')",
         "  , fs = require('fs');",
         "var childProcess = child.exec("+JSON.stringify(cmd)+", "+optString+", function(err) {",
-        "  console.log(err);
+        "  console.log(err);",
         "  fs.writeFileSync("+JSON.stringify(codeFile)+", err ? err.code.toString() : '0');",
         "});",
         "var stdoutStream = fs.createWriteStream("+JSON.stringify(stdoutFile)+");",
@@ -120,7 +120,7 @@ function execSync(cmd, opts, pipe) {
         "var child = require('child_process')",
         "  , fs = require('fs');",
         "var childProcess = child.exec("+JSON.stringify(cmd)+", "+optString+", function(err) {",
-        "  console.log(err);"
+        "  console.log(err);",
         "  fs.writeFileSync("+JSON.stringify(codeFile)+", err ? err.code.toString() : '0');",
         "});"
       ].join('\n') +

@@ -339,7 +339,7 @@ function wrap(cmd, fn, options) {
 
         try {
           // parse options if options are provided
-          if (typeof options.cmdOptions === 'object') {
+          if (options.cmdOptions instanceof Object) {
             args[0] = parseOptions(args[0], options.cmdOptions);
           }
 

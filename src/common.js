@@ -183,11 +183,12 @@ function parseOptions(opt, map, errorOptions) {
   });
 
   if (!opt) return options; // defaults
+  var hasErrorOpts = typeof errorOptions === 'object';
 
   var optionName;
   if (typeof opt === 'string') {
     if (opt[0] !== '-') {
-      return options;
+      error("Must start the options string with a '-'");
     }
 
     // e.g. chars = ['R', 'f']
@@ -201,10 +202,10 @@ function parseOptions(opt, map, errorOptions) {
         } else {
           options[optionName] = true;
         }
-      } else if (typeof errorOptions === 'object') {
-        error('option not recognized: ' + c, errorOptions);
       } else {
-        error('option not recognized: ' + c);
+        error('option not recognized: ' + c, hasErrorOpts
+          ? errorOptions
+          : undefined);
       }
     });
   } else if (typeof opt === 'object') {
@@ -214,16 +215,16 @@ function parseOptions(opt, map, errorOptions) {
       if (c in map) {
         optionName = map[c];
         options[optionName] = opt[key]; // assign the given value
-      } else if (typeof errorOptions === 'object') {
-        error('option not recognized: ' + c, errorOptions);
       } else {
-        error('option not recognized: ' + c);
+        error('option not recognized: ' + c, hasErrorOpts
+          ? errorOptions
+          : undefined);
       }
     });
-  } else if (typeof errorOptions === 'object') {
-    error('options must be strings or key-value pairs', errorOptions);
   } else {
-    error('options must be strings or key-value pairs');
+    error('options must be strings or key-value pairs', hasErrorOpts
+        ? errorOptions
+        : undefined);
   }
   return options;
 }
